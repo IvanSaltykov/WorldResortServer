@@ -1,6 +1,8 @@
 ﻿using Contracts;
 using Microsoft.AspNetCore.HttpOverrides;
+using MongoDB.Driver;
 using NLog;
+using Repository;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -24,19 +26,23 @@ namespace WorldResortServer
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services
+                .AddSingleton(typeof(IMongoDatabase),
+                   Connect(Configuration.GetSection("TodoStoreDatabase:ConnectionString").Value));
             services.ConfigureCors();
             services.ConfigureIISIntegration();
             services.ConfigureLoggerService();
             services.ConfigureSqlContext(Configuration);
             services.ConfigureRepositoryManager();
             services.AddControllers();
+            services.AddSingleton<IUserRepository, UserRepository>();
             services.AddEndpointsApiExplorer();
             services.AddSwaggerGen();
             services.AddAutoMapper(typeof(Startup));
             services.AddScoped<ValidationFilterAttribute>();
             services.AddAuthentication();
             services.ConfigureIdentity();
-            services.ConfigureJWT(Configuration);
+            //services.ConfigureJWT(Configuration);
             services.AddScoped<IAuthenticationManager, AuthenticationManager>();
         }
 
@@ -67,6 +73,15 @@ namespace WorldResortServer
                 endpoints.MapControllers();
             });
         }
+
+        private static IMongoDatabase Connect(string connectionString)
+        {
+            var url = new MongoUrl(connectionString);
+            var clientSettings = MongoClientSettings.FromUrl(url);
+            var client = new MongoClient(clientSettings);
+            return client.GetDatabase(url.DatabaseName);
+        }
     }
+
 
 }

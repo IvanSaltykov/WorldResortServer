@@ -16,3 +16,4 @@ namespace Contracts
         void CreateCity(City city);
     }
 }
+ 
